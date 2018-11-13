@@ -102,3 +102,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+## coin: 
+data/
+old/
+pytorch-caffe/
+pretrained/
