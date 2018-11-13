@@ -39,7 +39,7 @@ class DeepLabLargeFOV(nn.Module):
         layers.append(nn.ReLU(inplace = True))
         layers.append(nn.Conv2d(512, 512, kernel_size = 3, stride = 1, padding = 1))
         layers.append(nn.ReLU(inplace = True))
-        layers.append(nn.MaxPool2d(3, stride = 2, padding = 1))
+        layers.append(nn.MaxPool2d(3, stride = 1, padding = 1))
 
         layers.append(nn.Conv2d(512,
             512,
@@ -93,3 +93,14 @@ if __name__ == "__main__":
     in_ten = torch.randn(1, 3, 224, 224)
     out = net(in_ten)
     print(out.size())
+
+    in_ten = torch.randn(1, 3, 64, 64)
+    mod = nn.Conv2d(3,
+            512,
+            kernel_size = 3,
+            stride = 1,
+            padding = 2,
+            dilation = 2)
+    out = mod(in_ten)
+    print(out.shape)
+

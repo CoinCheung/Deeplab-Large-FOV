@@ -11,12 +11,12 @@ from PIL import Image
 import cv2
 import numpy as np
 
+from transform import HorizontalFlip, RandomCrop
 
-## TODO: see what augs are used here
 
 
 class PascalVoc(Dataset):
-    def __init__(self, root_pth, mode = 'train', *args, **kwargs):
+    def __init__(self, root_pth, mode = 'train', down_factor = 8, *args, **kwargs):
         super(PascalVoc, self).__init__(*args, **kwargs)
         self.mode =mode
         rootpath = osp.join(root_pth, 'VOC2012/')
@@ -40,45 +40,53 @@ class PascalVoc(Dataset):
             fns_lbs = ['{}.png'.format(el) for el in fns]
             self.fns_lbs = [osp.join(lbpth, el) for el in fns_lbs]
 
-        if self.mode in ('train', 'trainval'):
-            self.trans = transforms.Compose([
-                transforms.Resize((321, 321)),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-                ])
-        else:
-            self.trans = transforms.Compose([
-                transforms.Resize((321, 321)),
-                transforms.ToTensor(),
-                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-                ])
-
+        self.random_crop = RandomCrop((321, 321))
+        self.horizon_flip = HorizontalFlip()
+        self.trans = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            ])
 
     def __getitem__(self, idx):
         iname = self.fns_img[idx]
         lname = self.fns_lbs[idx]
         img = Image.open(iname)
-        img = self.trans(img)
         label = Image.open(lname)
-        label = np.array(label)
-        label = cv2.resize(label, (321, 321),
-                interpolation = cv2.INTER_NEAREST).astype(np.int)
-        #  print(np.max(label))
-        #  print(np.min(label))
-        #  print(np.max(label))
-        #  print(np.min(label))
-        #  print(img.shape)
-        #  print(label.shape)
-        #  cv2.imshow('img', img)
-        cv2.imshow('label', label)
-        cv2.waitKey(0)
+        if self.mode in ('train', 'trainval'):
+            im_lb = dict(im = img, lb = label)
+            im_lb = self.random_crop(im_lb)
+            im_lb = self.horizon_flip(im_lb)
+            img, label = im_lb['im'], im_lb['lb']
+        img = self.trans(img)
+        label = np.array(label).astype(np.int64)[np.newaxis, :]
+
         return img, label
 
     def __len__(self):
         return self.len
 
-if __name__ == '__main__':
-    ds = PascalVoc('./data/VOCdevkit')
-    ds[15]
 
+if __name__ == '__main__':
+    from torch.utils.data import DataLoader
+
+    ds = PascalVoc('./data/VOCdevkit')
+    im, lb = ds[110]
+    print(type(lb))
+    print(lb.shape)
+    dl = DataLoader(ds,
+                    batch_size = 20,
+                    shuffle = True,
+                    num_workers = 4,
+                    drop_last = True)
+    #  print(im.shape)
+    #  print(im.size())
+
+    for im, label in dl:
+        if not im.size() == (20, 3, 321, 321):
+            print(im.size())
+        if not label.size() == (20, 321, 321):
+            print(label.size)
+        #  label[label == 255] = 3
+        #  print(torch.max(label))
+        #  print(torch.min(label))
+    print(len(ds))
