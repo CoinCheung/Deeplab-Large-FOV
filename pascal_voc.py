@@ -16,7 +16,7 @@ from transform import HorizontalFlip, RandomCrop
 
 
 class PascalVoc(Dataset):
-    def __init__(self, root_pth, mode = 'train', down_factor = 8, *args, **kwargs):
+    def __init__(self, root_pth, mode = 'train', *args, **kwargs):
         super(PascalVoc, self).__init__(*args, **kwargs)
         self.mode =mode
         rootpath = osp.join(root_pth, 'VOC2012/')
@@ -59,6 +59,17 @@ class PascalVoc(Dataset):
             img, label = im_lb['im'], im_lb['lb']
         img = self.trans(img)
         label = np.array(label).astype(np.int64)[np.newaxis, :]
+
+        #  import cv2
+        #  lbb = label.astype(np.uint8).reshape(321, 321)
+        #  print(lbb.shape)
+        #  cv2.imshow('before', lbb)
+        #  cv2.waitKey(0)
+        #  print('before')
+        #  lbb[lbb == 255] = 2
+        #  lbb = lbb * 10
+        #  print(np.max(lbb))
+        #  print(np.min(lbb))
 
         return img, label
 

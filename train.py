@@ -28,8 +28,20 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 
 
+
+def resize_lb(out, lb):
+    ## infer shape of the label tensor, and implement nearest interpolate
+    H, W = lb.size()[2:]
+    h, w = out.size()[2:]
+    ih, iw = torch.linspace(0, H - 1, h).long(), torch.linspace(0, W - 1, w).long()
+    lb = lb[:, :, ih[:, None], iw]
+    lb = lb.contiguous().view(-1, h, w)
+    return lb
+
+
 def train():
     ## modules and losses
+    logger.info('creating model and loss module')
     ignore_label = 255
     net = DeepLabLargeFOV(3, 21)
     net.train()
@@ -39,15 +51,17 @@ def train():
     Loss.cuda()
 
     ## dataset
+    logger.info('creating dataset and dataloader')
     batchsize = 30
-    ds = PascalVoc('./data/VOCdevkit/', mode = 'train', down_factor = 8)
+    ds = PascalVoc('./data/VOCdevkit/', mode = 'train')
     dl = DataLoader(ds,
             batch_size = batchsize,
             shuffle = True,
-            num_workers = 4,
+            num_workers = 6,
             drop_last = True)
 
     ## optimizer
+    logger.info('creating optimizer')
     lr = 1e-3
     momentum = 0.9
     weight_decay = 5e-4
@@ -63,7 +77,11 @@ def train():
 
     ## train loop
     iter_num = 8000
+    log_iter = 20
+    loss_avg = []
+    st = time.time()
     diter = iter(dl)
+    logger.info('start training')
     for it in range(iter_num):
         try:
             im, lb = next(diter)
@@ -74,25 +92,37 @@ def train():
         im = im.cuda()
         lb = lb.cuda()
 
-        print(lb.dtype)
-        print(lb.size())
         optimizer.zero_grad()
         out = net(im)
-        print(out.shape)
-        size = out.size()[2:]
-        #  lb = F.interpolate(lb, size, mode = 'nearest')
-        lb = F.upsample(lb, size, mode = 'nearest')
+        #TODO: see if this interpolation is correct
+        lb = resize_lb(out, lb)
+
         loss = Loss(out, lb)
         loss.backward()
         optimizer.step()
         lr_scheduler.step()
 
-        print(im.shape)
-        print(lb.shape)
-        print(lb.dtype)
-        print(loss.detach().cpu().numpy())
+        loss = loss.detach().cpu().numpy()
+        loss_avg.append(loss)
 
-        break
+        ## logger
+        if it % log_iter == 0 and not it == 0:
+            loss_avg = sum(loss_avg) / len(loss_avg)
+            ed = time.time()
+            t_int = ed - st
+            lr = lr_scheduler.get_lr()
+            lr = [round(el, 6) for el in lr]
+            msg = 'iter: {}/{}, loss: {:3f}'.format(it, iter_num, loss_avg)
+            msg = '{}, lr: {}, time: {:3f}'.format(msg, lr, t_int)
+            logger.info(msg)
+            st = ed
+            loss_avg = []
+
+    ## dump model
+    model_pth = './res/model.pkl'
+    torch.save(net.module.state_dict(), model_pth)
+    logger.info('training done, model saved to: {}'.format(model_pth))
+
 
 
 if __name__ == "__main__":
