@@ -13,6 +13,29 @@ import numpy as np
 
 from transform import HorizontalFlip, RandomCrop
 
+'''
+0: background
+1: aeroplane
+2: bicycle
+3: bird
+4: boat
+5: bottle
+6: bus
+7: car
+8: cat
+9: chair
+10: cow
+11: diningtable
+12: dog
+13: horse
+14: motorbike
+15: person
+16: pottedplant
+17: sheep
+18: sofa
+19: train
+20: tvmonitor
+'''
 
 
 class PascalVoc(Dataset):
@@ -40,7 +63,7 @@ class PascalVoc(Dataset):
             fns_lbs = ['{}.png'.format(el) for el in fns]
             self.fns_lbs = [osp.join(lbpth, el) for el in fns_lbs]
 
-        self.random_crop = RandomCrop((321, 321))
+        self.random_crop = RandomCrop((321, 341))
         self.horizon_flip = HorizontalFlip()
         self.trans = transforms.Compose([
             transforms.ToTensor(),
@@ -57,8 +80,9 @@ class PascalVoc(Dataset):
             im_lb = self.random_crop(im_lb)
             im_lb = self.horizon_flip(im_lb)
             img, label = im_lb['im'], im_lb['lb']
-        img = self.trans(img)
-        label = np.array(label).astype(np.int64)[np.newaxis, :]
+            img = self.trans(img)
+            label = np.array(label).astype(np.int64)[np.newaxis, :]
+
 
         #  import cv2
         #  lbb = label.astype(np.uint8).reshape(321, 321)

@@ -4,9 +4,8 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 from torch.utils.data import DataLoader
+import torch.nn.functional as F
 import os
 import os.path as osp
 import time
@@ -16,12 +15,13 @@ import logging
 from model import DeepLabLargeFOV
 from pascal_voc import PascalVoc
 from transform import RandomCrop
+from optimizer import Optimizer
 
 
-## logging
+## setup
 if not osp.exists('./res/'): os.makedirs('./res/')
 logfile = 'deeplab_lfov-{}.log'.format(time.strftime('%Y-%m-%d-%H-%M-%S'))
-logfile = osp.join('res', logfile)
+logfile = osp.join('./res/', logfile)
 FORMAT = '%(levelname)s %(filename)s(%(lineno)d): %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT, filename=logfile)
 logger = logging.getLogger(__name__)
@@ -62,18 +62,22 @@ def train():
 
     ## optimizer
     logger.info('creating optimizer')
-    lr = 1e-3
-    momentum = 0.9
-    weight_decay = 5e-4
+    warmup_start_lr = 1e-6
+    warmup_iter = 1000
+    start_lr = 1e-3
     lr_step_size = 2000
     lr_factor = 0.1
-    optimizer = optim.SGD(net.parameters(),
-            lr = lr,
+    momentum = 0.9
+    weight_decay = 5e-4
+    optimizer = Optimizer(
+            params = net.parameters(),
+            warmup_start_lr = warmup_start_lr,
+            warmup_iter = warmup_iter,
+            start_lr = start_lr,
+            lr_step_size = lr_step_size,
+            lr_factor = lr_factor,
             momentum = momentum,
             weight_decay = weight_decay)
-    lr_scheduler = optim.lr_scheduler.StepLR(optimizer,
-            step_size = lr_step_size,
-            gamma = lr_factor)
 
     ## train loop
     iter_num = 8000
@@ -92,15 +96,22 @@ def train():
         im = im.cuda()
         lb = lb.cuda()
 
+        #  print(im.size())
+        #  print(lb.size())
+        #  break
+        #  lb = lb.squeeze(1).cuda()
+
         optimizer.zero_grad()
         out = net(im)
+        out = F.interpolate(out, im.size()[2:], mode = 'bilinear')
+        out = out.permute(0, 2, 3, 1).contiguous().view(-1, 21)
+        lb = lb.permute(0, 2, 3, 1).contiguous().view(-1,)
         #TODO: see if this interpolation is correct
-        lb = resize_lb(out, lb)
+        #  lb = resize_lb(out, lb)
 
         loss = Loss(out, lb)
         loss.backward()
         optimizer.step()
-        lr_scheduler.step()
 
         loss = loss.detach().cpu().numpy()
         loss_avg.append(loss)
@@ -110,10 +121,9 @@ def train():
             loss_avg = sum(loss_avg) / len(loss_avg)
             ed = time.time()
             t_int = ed - st
-            lr = lr_scheduler.get_lr()
-            lr = [round(el, 6) for el in lr]
+            lr = optimizer.get_lr()
             msg = 'iter: {}/{}, loss: {:3f}'.format(it, iter_num, loss_avg)
-            msg = '{}, lr: {}, time: {:3f}'.format(msg, lr, t_int)
+            msg = '{}, lr: {:4f}, time: {:3f}'.format(msg, lr, t_int)
             logger.info(msg)
             st = ed
             loss_avg = []

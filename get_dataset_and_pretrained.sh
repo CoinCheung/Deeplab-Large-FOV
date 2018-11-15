@@ -4,6 +4,7 @@ mkdir -p data
 cd data
 wget -c http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar
 tar -xvf VOCtrainval_11-May-2012.tar
+wget -c http://pjreddie.com/media/files/VOC2012test.tar
 cd ..
 
 # get pretrained init model

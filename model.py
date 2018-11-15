@@ -7,6 +7,9 @@ import torch
 import torch.nn as nn
 
 
+## TODO: used msra method to initialize the model weight and zero bias
+
+
 class DeepLabLargeFOV(nn.Module):
     def __init__(self, in_dim, out_dim, *args, **kwargs):
         super(DeepLabLargeFOV, self).__init__(*args, **kwargs)
@@ -80,16 +83,27 @@ class DeepLabLargeFOV(nn.Module):
         classifier.append(nn.Conv2d(1024, out_dim, kernel_size = 1))
         self.classifier = nn.Sequential(*classifier)
 
+        self.init_weights()
+
 
     def forward(self, x):
         x = self.features(x)
         x = self.classifier(x)
         return x
 
+    def init_weights(self):
+        vgg = torchvision.models.vgg16(pretrained = True)
+        state_vgg = vgg.features.state_dict()
+        self.features.load_state_dict(state_vgg)
+
+        for ly in self.classifier.children():
+            if isinstance(ly, nn.Conv2d):
+                nn.init.kaiming_normal_(ly.weight, a=1)
+                nn.init.constant_(ly.bias, 0)
+
 
 if __name__ == "__main__":
     net = DeepLabLargeFOV(3, 10)
-    print(net)
     in_ten = torch.randn(1, 3, 224, 224)
     out = net(in_ten)
     print(out.size())
