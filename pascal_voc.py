@@ -83,18 +83,6 @@ class PascalVoc(Dataset):
             img = self.trans(img)
             label = np.array(label).astype(np.int64)[np.newaxis, :]
 
-
-        #  import cv2
-        #  lbb = label.astype(np.uint8).reshape(321, 321)
-        #  print(lbb.shape)
-        #  cv2.imshow('before', lbb)
-        #  cv2.waitKey(0)
-        #  print('before')
-        #  lbb[lbb == 255] = 2
-        #  lbb = lbb * 10
-        #  print(np.max(lbb))
-        #  print(np.min(lbb))
-
         return img, label
 
     def __len__(self):

@@ -16,7 +16,7 @@ from model import DeepLabLargeFOV
 from pascal_voc import PascalVoc
 from transform import RandomCrop
 from optimizer import Optimizer
-from logger import *
+#  from logger import *
 
 
 ## setup
