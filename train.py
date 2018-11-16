@@ -16,18 +16,13 @@ from model import DeepLabLargeFOV
 from pascal_voc import PascalVoc
 from transform import RandomCrop
 from optimizer import Optimizer
-#  from logger import *
+from logger import *
 
 
 ## setup
-if not osp.exists('./res/'): os.makedirs('./res/')
-#  logger.setup('./res/')
-logfile = 'deeplab_lfov-{}.log'.format(time.strftime('%Y-%m-%d-%H-%M-%S'))
-logfile = osp.join('./res/', logfile)
-FORMAT = '%(levelname)s %(filename)s(%(lineno)d): %(message)s'
-logging.basicConfig(level=logging.INFO, format=FORMAT, filename=logfile)
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler())
+res_pth = './res/'
+if not osp.exists(res_pth): os.makedirs(res_pth)
+setup_logger(res_pth)
 
 
 
@@ -108,8 +103,6 @@ def train():
         out = F.interpolate(out, im.size()[2:], mode = 'bilinear')
         out = out.permute(0, 2, 3, 1).contiguous().view(-1, 21)
         lb = lb.permute(0, 2, 3, 1).contiguous().view(-1,)
-        #TODO: see if this interpolation is correct
-        #  lb = resize_lb(out, lb)
 
         loss = Loss(out, lb)
         loss.backward()
@@ -118,7 +111,7 @@ def train():
         loss = loss.detach().cpu().numpy()
         loss_avg.append(loss)
 
-        ## logger
+        ## log message
         if it % log_iter == 0 and not it == 0:
             loss_avg = sum(loss_avg) / len(loss_avg)
             ed = time.time()

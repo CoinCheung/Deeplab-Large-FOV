@@ -3,11 +3,7 @@
 
 
 import torch.optim as optim
-import logging
-
-
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler())
+from logger import *
 
 
 class Optimizer(object):
@@ -38,6 +34,7 @@ class Optimizer(object):
         self.iter = 0
         self.lr = warmup_start_lr
         self.warmup_factor = (start_lr / warmup_start_lr) ** (1. / warmup_iter)
+        logger.info('setup optimizer done')
 
 
     def step(self):

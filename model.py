@@ -7,8 +7,6 @@ import torch
 import torch.nn as nn
 
 
-## TODO: used msra method to initialize the model weight and zero bias
-
 
 class DeepLabLargeFOV(nn.Module):
     def __init__(self, in_dim, out_dim, *args, **kwargs):

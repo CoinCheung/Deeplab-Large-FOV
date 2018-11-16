@@ -8,24 +8,16 @@ import sys
 import logging
 
 
-logger = Logger()
+def setup_logger(logpth):
+    logfile = 'deeplab_lfov-{}.log'.format(time.strftime('%Y-%m-%d-%H-%M-%S'))
+    logfile = osp.join(logpth, logfile)
+    FORMAT = '%(levelname)s %(filename)s(%(lineno)d): %(message)s'
+    logging.basicConfig(level=logging.INFO, format=FORMAT, filename=logfile)
 
 
-class Logger(object):
-    def __init__(self):
-        self.logger = logging.getLogger(__name__)
+def get_logger():
+    logger = logging.getLogger(__name__)
+    logger.addHandler(logging.StreamHandler())
+    return logger
 
-    def setup_logger(self, logpth):
-        logfile = 'deeplab_lfov-{}.log'.format(time.strftime('%Y-%m-%d-%H-%M-%S'))
-        logfile = osp.join(logpth, logfile)
-        FORMAT = '%(levelname)s %(filename)s(%(lineno)d): %(message)s'
-        logging.basicConfig(level=logging.INFO, format=FORMAT, filename=logfile)
-
-
-    def get_logger(self):
-        self.logger.addHandler(logging.StreamHandler())
-        return self.logger
-
-    def into(self, msg):
-        self.logger.info(msg)
-
+logger = get_logger()
