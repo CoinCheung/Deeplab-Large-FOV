@@ -51,6 +51,8 @@ class PascalVoc(Dataset):
             txtfile = osp.join(rootpath, 'ImageSets/Segmentation/val.txt')
         elif mode == 'trainval':
             txtfile = osp.join(rootpath, 'ImageSets/Segmentation/trainval.txt')
+        elif mode == 'test':
+            txtfile = osp.join(rootpath, 'ImageSets/Segmentation/test.txt')
         else: assert(False)
         jpgpth = osp.join(rootpath, 'JPEGImages')
         lbpth = osp.join(rootpath, 'SegmentationClass')

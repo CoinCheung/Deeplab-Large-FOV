@@ -50,7 +50,7 @@ def train():
     ## dataset
     logger.info('creating dataset and dataloader')
     batchsize = 30
-    ds = PascalVoc('./data/VOCdevkit/', mode = 'train')
+    ds = PascalVoc('./data/VOCdevkit/', mode = 'trainval')
     dl = DataLoader(ds,
             batch_size = batchsize,
             shuffle = True,

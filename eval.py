@@ -41,7 +41,7 @@ def evaluate():
     net.load_state_dict(torch.load(model_pth))
 
     ## dataset
-    ds = PascalVoc('./data/VOCdevkit/', mode = 'val')
+    ds = PascalVoc('./data/VOCdevkit/', mode = 'test')
 
     ## inference
     ious = []

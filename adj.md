@@ -5,6 +5,9 @@ baseline:
 62.15
 
 =====
+1. 使用没aug的trainval
+
 1. 使用aug的数据集
+2. 使用crf
 3. mixup
 5. 加BN
