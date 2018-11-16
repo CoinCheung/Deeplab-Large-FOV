@@ -16,10 +16,12 @@ from model import DeepLabLargeFOV
 from pascal_voc import PascalVoc
 from transform import RandomCrop
 from optimizer import Optimizer
+from logger import *
 
 
 ## setup
 if not osp.exists('./res/'): os.makedirs('./res/')
+#  logger.setup('./res/')
 logfile = 'deeplab_lfov-{}.log'.format(time.strftime('%Y-%m-%d-%H-%M-%S'))
 logfile = osp.join('./res/', logfile)
 FORMAT = '%(levelname)s %(filename)s(%(lineno)d): %(message)s'

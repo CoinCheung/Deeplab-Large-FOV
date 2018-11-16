@@ -63,7 +63,7 @@ class PascalVoc(Dataset):
             fns_lbs = ['{}.png'.format(el) for el in fns]
             self.fns_lbs = [osp.join(lbpth, el) for el in fns_lbs]
 
-        self.random_crop = RandomCrop((321, 341))
+        self.random_crop = RandomCrop((321, 321))
         self.horizon_flip = HorizontalFlip()
         self.trans = transforms.Compose([
             transforms.ToTensor(),
