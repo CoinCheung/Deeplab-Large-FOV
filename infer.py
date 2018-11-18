@@ -15,8 +15,6 @@ from crf import crf
 from colormap import color_map
 
 
-## TODO: use argparse
-
 
 def infer():
     ## set up
