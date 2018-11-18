@@ -35,4 +35,4 @@ And you will see the result picture.
 
 * Implement warmup with the strategy mentioned in this [paper](https://arxiv.org/abs/1706.02677)
 
-With these methods, my naive model achieves the performance quite close to  the performance in the paper.
+With these methods, my naive model trained on pure pascal VOC2012 training set(1467 images) achieves the performance quite close to  the performance in the paper.
