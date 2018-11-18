@@ -44,7 +44,7 @@ class PascalVoc(Dataset):
         self.mode =mode
         rootpath = osp.join(root_pth, 'VOC2012/')
         if not osp.exists(rootpath): assert(False)
-        if not self.mode in ('train', 'val', 'trainval'): assert(False)
+        if not self.mode in ('train', 'val', 'trainval', 'test'): assert(False)
         if mode == 'train':
             txtfile = osp.join(rootpath, 'ImageSets/Segmentation/train.txt')
         elif mode == 'val':
