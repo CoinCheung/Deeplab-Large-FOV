@@ -11,6 +11,7 @@ import os.path as osp
 import time
 import sys
 import logging
+import numpy as np
 
 from model import DeepLabLargeFOV
 from pascal_voc import PascalVoc
@@ -23,6 +24,7 @@ from logger import *
 res_pth = './res/'
 if not osp.exists(res_pth): os.makedirs(res_pth)
 setup_logger(res_pth)
+torch.multiprocessing.set_sharing_strategy('file_system')
 
 
 
@@ -62,16 +64,16 @@ def train():
     warmup_start_lr = 1e-6
     warmup_iter = 1000
     start_lr = 1e-3
-    lr_step_size = 2000
+    lr_steps = [5000, 7000]
     lr_factor = 0.1
     momentum = 0.9
-    weight_decay = 5e-4
+    weight_decay = 1e-4
     optimizer = Optimizer(
             params = net.parameters(),
             warmup_start_lr = warmup_start_lr,
             warmup_iter = warmup_iter,
             start_lr = start_lr,
-            lr_step_size = lr_step_size,
+            lr_steps = lr_steps,
             lr_factor = lr_factor,
             momentum = momentum,
             weight_decay = weight_decay)
@@ -81,6 +83,7 @@ def train():
     log_iter = 20
     loss_avg = []
     st = time.time()
+    alpha = 0.1
     diter = iter(dl)
     logger.info('start training')
     for it in range(iter_num):
@@ -93,24 +96,31 @@ def train():
         im = im.cuda()
         lb = lb.cuda()
 
-        #  print(im.size())
-        #  print(lb.size())
-        #  break
-        #  lb = lb.squeeze(1).cuda()
-
+        lam = np.random.beta(alpha, alpha)
+        idx = torch.randperm(batchsize)
+        mix_im = im * lam + (1. - lam) * im[idx, :]
+        mix_lb = lb[idx, :]
         optimizer.zero_grad()
-        out = net(im)
+        out = net(mix_im)
         out = F.interpolate(out, im.size()[2:], mode = 'bilinear')
-        out = out.permute(0, 2, 3, 1).contiguous().view(-1, 21)
-        lb = lb.permute(0, 2, 3, 1).contiguous().view(-1,)
-
-        loss = Loss(out, lb)
+        lb = torch.squeeze(lb)
+        mix_lb = torch.squeeze(mix_lb)
+        loss = lam * Loss(out, lb) + (1. - lam) * Loss(out, mix_lb)
         loss.backward()
         optimizer.step()
 
+        #  optimizer.zero_grad()
+        #  out = net(im)
+        #  out = F.interpolate(out, im.size()[2:], mode = 'bilinear')
+        #  lb = torch.squeeze(lb)
+        #  #  out = out.permute(0, 2, 3, 1).contiguous().view(-1, 21)
+        #  #  lb = lb.permute(0, 2, 3, 1).contiguous().view(-1,)
+        #  loss = Loss(out, lb)
+        #  loss.backward()
+        #  optimizer.step()
+
         loss = loss.detach().cpu().numpy()
         loss_avg.append(loss)
-
         ## log message
         if it % log_iter == 0 and not it == 0:
             loss_avg = sum(loss_avg) / len(loss_avg)

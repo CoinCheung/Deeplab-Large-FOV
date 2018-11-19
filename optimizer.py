@@ -12,7 +12,7 @@ class Optimizer(object):
             warmup_start_lr,
             warmup_iter,
             start_lr,
-            lr_step_size,
+            lr_steps,
             lr_factor,
             momentum,
             weight_decay,
@@ -20,7 +20,7 @@ class Optimizer(object):
         self.warmup_start_lr = warmup_start_lr
         self.warmup_iter = warmup_iter
         self.start_lr = start_lr
-        self.lr_step_size = lr_step_size
+        self.lr_steps = lr_steps
         self.lr_factor = lr_factor
         self.momentum = momentum
         self.weight_decay = weight_decay
@@ -34,14 +34,12 @@ class Optimizer(object):
         self.iter = 0
         self.lr = warmup_start_lr
         self.warmup_factor = (start_lr / warmup_start_lr) ** (1. / warmup_iter)
-        logger.info('setup optimizer done')
 
 
     def step(self):
-        if self.iter % self.lr_step_size == 0 and self.iter > self.warmup_iter:
-            #  logger.info('===> learning rate is set to: {}'.format(self.lr))
-            print('===> learning rate is set to: {}'.format(self.lr))
         lr = self.get_lr()
+        if self.iter in self.lr_steps:
+            logger.info('\t===> learning rate is set to: {}'.format(self.lr))
         for pg in self.optim.param_groups:
             pg['lr'] = lr
         self.optim.defaults['lr'] = lr
@@ -52,9 +50,9 @@ class Optimizer(object):
     def get_lr(self):
         if self.iter <= self.warmup_iter:
             self.lr = self.warmup_start_lr * self.warmup_factor ** self.iter
-        elif self.iter % self.lr_step_size == 0:
-            index = self.iter / self.lr_step_size
-            self.lr = self.start_lr * self.lr_factor ** index
+        else:
+            for i, ms in enumerate(self.lr_steps):
+                if ms == self.iter: self.lr = self.start_lr * (0.1 ** (i + 1))
         return self.lr
 
     def zero_grad(self):
@@ -69,7 +67,7 @@ if __name__ == '__main__':
     warmup_start_lr = 1e-6
     warmup_iter = 10
     start_lr = 1e-3
-    lr_step_size = 20
+    lr_steps = [20, 40]
     lr_factor = 0.1
     momentum = 0.9
     weight_decay = 5e-4
@@ -78,7 +76,7 @@ if __name__ == '__main__':
             warmup_start_lr = warmup_start_lr,
             warmup_iter = warmup_iter,
             start_lr = start_lr,
-            lr_step_size = lr_step_size,
+            lr_steps = lr_steps,
             lr_factor = lr_factor,
             momentum = momentum,
             weight_decay = weight_decay
