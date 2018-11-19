@@ -77,7 +77,7 @@ class DeepLabLargeFOV(nn.Module):
         classifier.append(nn.ReLU(inplace = True))
         classifier.append(nn.Conv2d(1024, 1024, kernel_size = 1, stride = 1, padding = 0))
         classifier.append(nn.ReLU(inplace = True))
-        classifier.append(nn.Dropout(p = 0.5))
+        #  classifier.append(nn.Dropout(p = 0.5))
         classifier.append(nn.Conv2d(1024, out_dim, kernel_size = 1))
         self.classifier = nn.Sequential(*classifier)
 
