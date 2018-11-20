@@ -7,11 +7,15 @@ import torch.nn.functional as F
 import numpy as np
 import cv2
 from PIL import Image
+from tqdm import tqdm
 
 from model import DeepLabLargeFOV
 from pascal_voc import PascalVoc
 from crf import crf
+from logger import *
 
+
+## TODO: combine this eval to train and print whole logger info to the log file
 
 
 def compute_iou(mask, lb, ignore_lb = (255, )):
@@ -37,15 +41,16 @@ def evaluate():
     net = DeepLabLargeFOV(3, 21)
     net.eval()
     net.cuda()
-    model_pth = './res/model.pkl'
+    model_pth = './res/voc2012/model_final.pkl'
     net.load_state_dict(torch.load(model_pth))
 
     ## dataset
     ds = PascalVoc('./data/VOCdevkit/', mode = 'val')
 
     ## inference
+    logger.info('evaluating on val set')
     ious = []
-    for i, (im, lb) in enumerate(ds):
+    for i, (im, lb) in enumerate(tqdm(ds)):
         im_org = im
         im = ds.trans(im)
         im = im.cuda().unsqueeze(0)
@@ -57,23 +62,10 @@ def evaluate():
 
         iou = compute_iou(mask, lb)
         ious.append(iou)
-
-        #  if iou == 0:
-        #      from colormap import color_map
-        #      cm = color_map()
-        #      H, W = mask.shape
-        #      pic = np.empty((H, W, 3))
-        #      for i in range(21):
-        #          pic[mask == i] = cm[i]
-        #      im_org = cv2.cvtColor(np.asarray(im_org), cv2.COLOR_RGB2BGR)
-        #      cv2.imshow('pic', pic)
-        #      cv2.imshow('org', im_org)
-        #      cv2.waitKey(0)
-
-        print('iou is: {}'.format(iou))
+        logger.info('image {}, iou is: {}'.format(i, iou))
 
     mIOU = sum(ious) / len(ious)
-    print('iou in whole is: {}'.format(mIOU))
+    logger.info('iou in whole is: {}'.format(mIOU))
 
 
 

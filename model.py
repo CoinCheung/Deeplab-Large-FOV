@@ -5,6 +5,7 @@
 import torchvision
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 
@@ -85,9 +86,11 @@ class DeepLabLargeFOV(nn.Module):
 
 
     def forward(self, x):
+        im = x
         x = self.features(x)
         x = self.classifier(x)
-        return x
+        out = F.interpolate(x, im.size()[2:], mode = 'bilinear') # upsample to original size
+        return out
 
     def init_weights(self):
         vgg = torchvision.models.vgg16(pretrained = True)
