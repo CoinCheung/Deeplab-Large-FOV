@@ -38,6 +38,6 @@ And you will see the result picture.
 
 * upsample the output logits of the model instead of downsample the ground truth as does in [deeplabv3](https://arxiv.org/abs/1706.05587).
 
-* Enlarge the total training iter number to be 16000, and set the lr step to be 10000 and 14000.
+* Enlarge the total training iter number to be 16000, and let lr jump by a factor of 0.1 at 10000th and 14000th iteration.
 
-With these methods, my naive model trained on pure pascal VOC2012 training set(1467 images) achieves the performance quite close to  the performance in the paper.
+With these trick, my naive model trained on pure pascal VOC2012 training set(1467 images) achieves the performance quite close to the performance in the paper.
