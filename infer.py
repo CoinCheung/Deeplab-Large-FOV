@@ -16,7 +16,7 @@ from colormap import color_map
 
 
 
-def infer():
+def infer(use_crf = True):
     ## set up
     cm = color_map(N = 21)
     trans = transforms.Compose([
@@ -41,9 +41,13 @@ def infer():
     ## inference
     scores = net(im)
     scores = F.interpolate(scores, im.size()[2:], mode = 'bilinear')
+    scores = F.softmax(scores, 1)
     scores = scores.detach().cpu().numpy()
-    mask = np.argmax(scores, axis = 1)
-    mask = np.squeeze(mask, axis = 0)
+    if use_crf:
+        mask = crf(im_org, scores)
+    else:
+        mask = np.argmax(scores, axis = 1)
+        mask = np.squeeze(mask, axis = 0)
     H, W = mask.shape
     pic = np.empty((H, W, 3))
     for i in range(21):

@@ -25,7 +25,8 @@ from logger import *
 # 1. refactoring the codes to make files look neater
 # move sources to directories: lib utils
 # 2. use argparse, and config file
-# 3. move F.interpolation to model.py
+# 3. no need to aggregate eval.py to train.py
+# 4. remove code associated to mixup
 
 
 ## hyper parameters
@@ -36,20 +37,23 @@ n_classes = 21
 ## dataset
 dataset = 'PascalVoc_Aug'
 datapth = './data/VOC_AUG/'
-batchsize = 30
+crop_size = (513, 513)
+batchsize = 20
 n_workers = 6
 ## optimizer
 warmup_iter = 1000
 warmup_start_lr = 1e-6
 start_lr = 1e-3
-lr_steps = [5000, 7000]
-iter_num = 8000
+lr_steps = [10000, 14000]
+iter_num = 16000
 lr_factor = 0.1
 momentum = 0.9
-weight_decay = 1e-4
+weight_decay = 5e-4
 ## training control
+multi_scale = False
+scales = (0.5, 0.75, 1)
 log_iter = 20
-use_mixup = True
+use_mixup = False
 alpha = 0.1
 res_pth = './res/voc_aug'
 
@@ -61,6 +65,7 @@ res_pth = './res/voc_aug'
 #  ## dataset
 #  dataset = 'PascalVoc'
 #  datapth = './data/VOCdevkit/'
+#  crop_size = (321, 321)
 #  batchsize = 30
 #  n_workers = 6
 #  ## optimizer
@@ -97,7 +102,7 @@ def train():
 
     ## dataset
     logger.info('creating dataset and dataloader')
-    ds = eval(dataset)(datapth, mode = 'train')
+    ds = eval(dataset)(datapth, crop_size = crop_size,  mode = 'train')
     dl = DataLoader(ds,
             batch_size = batchsize,
             shuffle = True,
@@ -131,21 +136,41 @@ def train():
         im = im.cuda()
         lb = lb.cuda()
 
-        if use_mixup:
-            lam = np.random.beta(alpha, alpha)
-            idx = torch.randperm(batchsize)
-            mix_im = im * lam + (1. - lam) * im[idx, :]
-            mix_lb = lb[idx, :]
+        #  if use_mixup:
+        #      lam = np.random.beta(alpha, alpha)
+        #      idx = torch.randperm(batchsize)
+        #      mix_im = im * lam + (1. - lam) * im[idx, :]
+        #      mix_lb = lb[idx, :]
+        #      optimizer.zero_grad()
+        #      out = net(mix_im)
+        #      lb = torch.squeeze(lb)
+        #      mix_lb = torch.squeeze(mix_lb)
+        #      loss = lam * Loss(out, lb) + (1. - lam) * Loss(out, mix_lb)
+        #      loss.backward()
+        #      optimizer.step()
+        #  else:
+        #      optimizer.zero_grad()
+        #      out = net(im)
+        #      lb = torch.squeeze(lb)
+        #      loss = Loss(out, lb)
+        #      loss.backward()
+        #      optimizer.step()
+        if multi_scale:
             optimizer.zero_grad()
-            out = net(mix_im)
-            lb = torch.squeeze(lb)
-            mix_lb = torch.squeeze(mix_lb)
-            loss = lam * Loss(out, lb) + (1. - lam) * Loss(out, mix_lb)
-            loss.backward()
+            H, W = im.size()[2:]
+            for s in scales:
+                h, w = int(H * s), int(W * s)
+                im_s = F.interpolate(im, (h, w), mode = 'bilinear')
+                out = net(im_s)
+                out = F.interpolate(out, lb.size()[2:], mode = 'bilinear') # upsample to original size
+                lb = torch.squeeze(lb)
+                loss = Loss(out, lb)
+                loss.backward()
             optimizer.step()
         else:
             optimizer.zero_grad()
             out = net(im)
+            out = F.interpolate(out, lb.size()[2:], mode = 'bilinear') # upsample to original size
             lb = torch.squeeze(lb)
             loss = Loss(out, lb)
             loss.backward()

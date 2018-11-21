@@ -16,7 +16,11 @@ from transform import HorizontalFlip, RandomCrop
 
 
 class PascalVoc_Aug(Dataset):
-    def __init__(self, root_pth, mode = 'train', *args, **kwargs):
+    def __init__(self,
+            root_pth,
+            crop_size = (321, 321),
+            mode = 'train',
+            *args, **kwargs):
         self.impth = osp.join(root_pth, 'images')
         self.lbpth = osp.join(root_pth, 'labels')
         self.mode = mode
@@ -35,7 +39,7 @@ class PascalVoc_Aug(Dataset):
         self.lbs = ['{}.png'.format(el) for el in fns]
         self.lbs = [osp.join(self.lbpth, el) for el in self.lbs]
 
-        self.random_crop = RandomCrop((321, 321))
+        self.random_crop = RandomCrop(crop_size)
         self.horizon_flip = HorizontalFlip()
         self.trans = transforms.Compose([
             transforms.ToTensor(),

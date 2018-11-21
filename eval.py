@@ -36,12 +36,13 @@ def compute_iou(mask, lb, ignore_lb = (255, )):
     return sum(iou_cls) / len(iou_cls)
 
 
-def evaluate():
+def evaluate(use_crf = True):
     ## network
     net = DeepLabLargeFOV(3, 21)
     net.eval()
     net.cuda()
-    model_pth = './res/voc2012/model_final.pkl'
+    #  model_pth = './res/voc2012/model_final.pkl'
+    model_pth = './res/voc_aug/model_final.pkl'
     net.load_state_dict(torch.load(model_pth))
 
     ## dataset
@@ -51,13 +52,17 @@ def evaluate():
     logger.info('evaluating on val set')
     ious = []
     for i, (im, lb) in enumerate(tqdm(ds)):
-        im_org = im
+        im_org = cv2.cvtColor(np.asarray(im), cv2.COLOR_RGB2BGR)
         im = ds.trans(im)
         im = im.cuda().unsqueeze(0)
         scores = net(im)
         scores = F.interpolate(scores, im.size()[2:], mode = 'bilinear')
+        scores = F.softmax(scores, 1)
         scores = scores.detach().cpu().numpy()
-        mask = np.argmax(scores, axis = 1).squeeze(0).astype(np.uint8)
+        if use_crf:
+            mask = crf(im_org, scores)
+        else:
+            mask = np.argmax(scores, axis = 1).squeeze(0).astype(np.uint8)
         lb = np.asarray(lb)
 
         iou = compute_iou(mask, lb)
@@ -65,9 +70,10 @@ def evaluate():
         logger.info('image {}, iou is: {}'.format(i, iou))
 
     mIOU = sum(ious) / len(ious)
-    logger.info('iou in whole is: {}'.format(mIOU))
+    #  logger.info('iou in whole is: {}'.format(mIOU))
+    print('iou in whole is: {}'.format(mIOU))
 
 
 
 if __name__ == "__main__":
-    evaluate()
+    evaluate(use_crf = False)
