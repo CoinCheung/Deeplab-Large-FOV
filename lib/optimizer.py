@@ -3,7 +3,10 @@
 
 
 import torch.optim as optim
-from logger import *
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class Optimizer(object):
@@ -52,7 +55,8 @@ class Optimizer(object):
             self.lr = self.warmup_start_lr * self.warmup_factor ** self.iter
         else:
             for i, ms in enumerate(self.lr_steps):
-                if ms == self.iter: self.lr = self.start_lr * (0.1 ** (i + 1))
+                if ms == self.iter:
+                    self.lr = self.start_lr * (0.1 ** (i + 1))
         return self.lr
 
     def zero_grad(self):

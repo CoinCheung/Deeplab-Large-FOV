@@ -50,16 +50,3 @@ if __name__ == '__main__':
     crop = RandomCrop((321, 321))
     img = Image.open('data/img.jpg')
     lb = Image.open('data/label.png')
-    #  img.show('img')
-    #  lb.show('lb')
-    im_lb = dict(im=img, lb=lb)
-    #  im_fl_lb = flip(im_lb)
-    im_fl_lb = crop(im_lb)
-    #  im_fl_lb['im'].show()
-    #  im_fl_lb['im'].close()
-    im_fl_lb['lb'].show()
-    #  im_fl_lb['lb'].close()
-
-
-
-

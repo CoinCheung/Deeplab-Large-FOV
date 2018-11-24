@@ -11,7 +11,7 @@ from PIL import Image
 import cv2
 import numpy as np
 
-from transform import HorizontalFlip, RandomCrop
+from lib.transform import HorizontalFlip, RandomCrop
 
 '''
 0: background
@@ -39,7 +39,11 @@ from transform import HorizontalFlip, RandomCrop
 
 
 class PascalVoc(Dataset):
-    def __init__(self, root_pth, mode = 'train', *args, **kwargs):
+    def __init__(self,
+            root_pth,
+            crop_size = (321, 321),
+            mode = 'train',
+            *args, **kwargs):
         super(PascalVoc, self).__init__(*args, **kwargs)
         self.mode =mode
         rootpath = osp.join(root_pth, 'VOC2012/')
@@ -65,7 +69,7 @@ class PascalVoc(Dataset):
             fns_lbs = ['{}.png'.format(el) for el in fns]
             self.fns_lbs = [osp.join(lbpth, el) for el in fns_lbs]
 
-        self.random_crop = RandomCrop((321, 321))
+        self.random_crop = RandomCrop(crop_size)
         self.horizon_flip = HorizontalFlip()
         self.trans = transforms.Compose([
             transforms.ToTensor(),
@@ -103,15 +107,10 @@ if __name__ == '__main__':
                     shuffle = True,
                     num_workers = 4,
                     drop_last = True)
-    #  print(im.shape)
-    #  print(im.size())
 
     for im, label in dl:
         if not im.size() == (20, 3, 321, 321):
             print(im.size())
         if not label.size() == (20, 321, 321):
             print(label.size)
-        #  label[label == 255] = 3
-        #  print(torch.max(label))
-        #  print(torch.min(label))
     print(len(ds))
