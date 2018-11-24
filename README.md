@@ -18,7 +18,7 @@ Just run the training script and evaluating script:
     $ python3 train.py --cfg config/pascal_voc_2012_multi_scale.py
     $ python3 eval.py --cfg config/pascal_voc_2012_multi_scale.py
 ```
-Then you will see the mIOU result as reported by the author.
+Then you will see the mIOU result as reported by the autho(62.95 mIOU for deeplab-largeFOV).
 
 If you want to see a better result, use the configuration file `pascal_voc_aug_multi_scale.py`:
 ```
