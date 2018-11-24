@@ -15,7 +15,7 @@ mkdir -p VOC_AUG VOC_AUG/images VOC_AUG/labels
 cp -riv benchmark_RELEASE/dataset/*txt VOC_AUG/
 cp -riv benchmark_RELEASE/dataset/img/* VOC_AUG/images/
 cd ..
-python3 convert_pascal_aug.py
+python3 utils/convert_pascal_aug.py
 
 # get pretrained init model
 # mkdir -p pretrained
