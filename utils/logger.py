@@ -13,11 +13,6 @@ def setup_logger(logpth):
     logfile = osp.join(logpth, logfile)
     FORMAT = '%(levelname)s %(filename)s(%(lineno)d): %(message)s'
     logging.basicConfig(level=logging.INFO, format=FORMAT, filename=logfile)
+    logging.root.addHandler(logging.StreamHandler())
 
 
-def get_logger():
-    logger = logging.getLogger(__name__)
-    logger.addHandler(logging.StreamHandler())
-    return logger
-
-logger = get_logger()
