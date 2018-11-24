@@ -25,10 +25,6 @@ from utils.logger import setup_logger
 from evaluate import eval_model
 
 
-## TODO:
-# 1. refactoring the codes to make files look neater
-# 3. no need to aggregate eval.py to train.py
-
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 
