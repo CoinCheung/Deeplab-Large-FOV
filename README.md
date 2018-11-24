@@ -41,3 +41,5 @@ And you will see the result picture.
 * Enlarge the total training iter number to be 16000, and let lr jump by a factor of 0.1 at 10000th and 14000th iteration.
 
 With these trick, my naive model trained on pure pascal VOC2012 training set(1467 images) achieves the performance quite close to the performance in the paper.
+
+I also tried to use [mixup](https://arxiv.org/abs/1710.09412) in hopes of some boost to the performance, but the result just gave a slap on my face. I left the mixup code in the program and if you have special insights on this trick, please feel free to add a pull request or open an issue. Many thanks !

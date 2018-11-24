@@ -37,20 +37,20 @@ n_classes = 21
 ## dataset
 dataset = 'PascalVoc_Aug'
 datapth = './data/VOC_AUG/'
-crop_size = (513, 513)
+crop_size = (497, 497)
 batchsize = 20
 n_workers = 6
 ## optimizer
 warmup_iter = 1000
 warmup_start_lr = 1e-6
 start_lr = 1e-3
-lr_steps = [10000, 14000]
-iter_num = 16000
+lr_steps = [12500, 17500]
+iter_num = 20000
 lr_factor = 0.1
 momentum = 0.9
 weight_decay = 5e-4
 ## training control
-multi_scale = False
+multi_scale = True
 scales = (0.5, 0.75, 1)
 log_iter = 20
 use_mixup = False
@@ -143,6 +143,7 @@ def train():
         #      mix_lb = lb[idx, :]
         #      optimizer.zero_grad()
         #      out = net(mix_im)
+        #      out = F.interpolate(out, lb.size()[2:], mode = 'bilinear') # upsample to original size
         #      lb = torch.squeeze(lb)
         #      mix_lb = torch.squeeze(mix_lb)
         #      loss = lam * Loss(out, lb) + (1. - lam) * Loss(out, mix_lb)
@@ -151,10 +152,12 @@ def train():
         #  else:
         #      optimizer.zero_grad()
         #      out = net(im)
+        #      out = F.interpolate(out, lb.size()[2:], mode = 'bilinear') # upsample to original size
         #      lb = torch.squeeze(lb)
         #      loss = Loss(out, lb)
         #      loss.backward()
         #      optimizer.step()
+
         if multi_scale:
             optimizer.zero_grad()
             H, W = im.size()[2:]

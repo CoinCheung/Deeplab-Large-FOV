@@ -36,18 +36,34 @@ alpha=0.1, 1e-4, [10000, 14000]/16000: 69.19，
 [10000, 14000]/16000, 5e-4: 69,63(no_crf), 70.76
 
 
+5. batch size
+crop size: 321
+batchsize = 20, [12500, 17500]/20000: 70.16
+batchsize = 30, [12500, 17500]/20000: 70.32
+看样子影响不大，就好一丢丢
+crop size: 497
+batchsize=30, [12500, 17500]/20000: 67.58 
+batchsize=20, [12500, 17500]/20000: 67.51
+alpha=0.1, 1e-4, batchsize=20, crop=497, [12500, 17500]/20000: 66.83
+
+
 2) 加上dropout的: 
 [10000, 14000]/16000, 5e-4: 
 
 
-5. crop size改成513
-memory 限制batchsize = 20, [10000, 14000]/16000, (no_crf): 右
-batchsize = 20, [12500, 17500]/20000, (no_crf): 左
+6. crop size
+改成513: 
+memory 限制batchsize = 20, [10000, 14000]/16000, (no_crf): 66.74
+batchsize = 20, [12500, 17500]/20000, (no_crf): 67.18
 
 
-6. multi-scale training和testing
+
+7. multi-scale training和testing
+batchsize=20, (457, 457): screen-40167
+batchsize=20, (497, 497), 5e-4: 71.82，有用了
+batchsize=20, (497, 497), 5e-4, dropout:  71.84, 差不多吧
 
 
-7. 使用crf
+8. 使用crf
 voc2012: (3,3,4,121,5), 5: 63.72，一丢丢
 voc2012: (3,3,4,121,5), 5: 64.51，强了不少呢

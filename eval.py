@@ -76,4 +76,4 @@ def evaluate(use_crf = True):
 
 
 if __name__ == "__main__":
-    evaluate(use_crf = False)
+    evaluate(use_crf = True)
