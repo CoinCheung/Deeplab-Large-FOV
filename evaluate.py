@@ -61,9 +61,10 @@ def eval_model(net, use_crf = True):
         im_org = cv2.cvtColor(np.asarray(im), cv2.COLOR_RGB2BGR)
         im = ds.trans(im)
         im = im.cuda().unsqueeze(0)
-        scores = net(im)
-        scores = F.interpolate(scores, im.size()[2:], mode = 'bilinear')
-        scores = F.softmax(scores, 1)
+        with torch.no_grad():
+            scores = net(im)
+            scores = F.interpolate(scores, im.size()[2:], mode = 'bilinear')
+            scores = F.softmax(scores, 1)
         scores = scores.detach().cpu().numpy()
         if use_crf:
             mask = crf(im_org, scores)
