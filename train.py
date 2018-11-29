@@ -152,7 +152,8 @@ def train(args):
 
     ## test after train
     if cfg.test_after_train:
-        eval_model(net, cfg.use_crf)
+        mIOU = eval_model(net, cfg.use_crf)
+        logger.info('iou in whole is: {}'.format(mIOU))
 
 
 if __name__ == "__main__":
