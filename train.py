@@ -139,8 +139,8 @@ def train(args):
             ed = time.time()
             t_int = ed - st
             lr = optimizer.get_lr()
-            msg = 'iter: {}/{}, loss: {:3f}'.format(it, cfg.iter_num, loss_avg)
-            msg = '{}, lr: {:4f}, time: {:3f}'.format(msg, lr, t_int)
+            msg = 'iter: {}/{}, loss: {:.4f}'.format(it, cfg.iter_num, loss_avg)
+            msg = '{}, lr: {:4f}, time: {:.4f}'.format(msg, lr, t_int)
             logger.info(msg)
             st = ed
             loss_avg = []
