@@ -88,6 +88,7 @@ class PascalVoc(Dataset):
             img, label = im_lb['im'], im_lb['lb']
             img = self.trans(img)
             label = np.array(label).astype(np.int64)[np.newaxis, :]
+        ## for val set, just output raw PIL images
 
         return img, label
 

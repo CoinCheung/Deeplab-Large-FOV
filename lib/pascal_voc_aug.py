@@ -56,8 +56,8 @@ class PascalVoc_Aug(Dataset):
             im_lb = self.random_crop(im_lb)
             im_lb = self.horizon_flip(im_lb)
             img, label = im_lb['im'], im_lb['lb']
-            img = self.trans(img)
-            label = np.array(label).astype(np.int64)[np.newaxis, :]
+        img = self.trans(img)
+        label = np.array(label).astype(np.int64)[np.newaxis, :]
 
         return img, label
 
