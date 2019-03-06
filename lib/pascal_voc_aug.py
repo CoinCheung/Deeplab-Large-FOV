@@ -12,18 +12,18 @@ import torchvision.transforms as transforms
 import torch
 
 from lib.transform import HorizontalFlip, RandomCrop
+import lib.transform as T
 
 
 
 class PascalVoc_Aug(Dataset):
-    def __init__(self,
-            root_pth,
-            crop_size = (321, 321),
-            mode = 'train',
-            *args, **kwargs):
+    def __init__(self, cfg, mode='train', *args, **kwargs):
+        super(PascalVoc_Aug, self).__init__(*args, **kwargs)
+        self.cfg = cfg
+        self.mode = mode
+        root_pth = osp.join(cfg.datapth, 'VOC_AUG')
         self.impth = osp.join(root_pth, 'images')
         self.lbpth = osp.join(root_pth, 'labels')
-        self.mode = mode
         if mode == 'train':
             txtpth = osp.join(root_pth, 'train.txt')
         elif mode == 'val':
@@ -39,9 +39,17 @@ class PascalVoc_Aug(Dataset):
         self.lbs = ['{}.png'.format(el) for el in fns]
         self.lbs = [osp.join(self.lbpth, el) for el in self.lbs]
 
-        self.random_crop = RandomCrop(crop_size)
-        self.horizon_flip = HorizontalFlip()
-        self.trans = transforms.Compose([
+        self.trans = T.Compose([
+            T.RandomScale(cfg.train_scales),
+            T.RandomCrop((cfg.crop_size, cfg.crop_size)),
+            T.HorizontalFlip(),
+            T.ColorJitter(
+                brightness = cfg.color_brightness,
+                contrast = cfg.color_contrast,
+                saturation = cfg.color_saturation
+                ),
+            ])
+        self.to_tensor = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             ])
@@ -51,13 +59,14 @@ class PascalVoc_Aug(Dataset):
         lname = self.lbs[idx]
         img = Image.open(iname)
         label = Image.open(lname)
+        im_lb = dict(im = img, lb = label)
         if self.mode == 'train':
-            im_lb = dict(im = img, lb = label)
-            im_lb = self.random_crop(im_lb)
-            im_lb = self.horizon_flip(im_lb)
-            img, label = im_lb['im'], im_lb['lb']
-        img = self.trans(img)
+            im_lb = self.trans(im_lb)
+        img, label = im_lb['im'], im_lb['lb']
+        img = self.to_tensor(img)
         label = np.array(label).astype(np.int64)[np.newaxis, :]
+        if self.mode == 'val':
+            img = torch.unsqueeze(img, 0)
 
         return img, label
 

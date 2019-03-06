@@ -16,16 +16,16 @@ This will download and extract the VOC2012 dataset together with the augumented 
 Just run the training script and evaluating script:
 ```
     $ python3 train.py --cfg config/pascal_voc_2012_multi_scale.py
-    $ python3 eval.py --cfg config/pascal_voc_2012_multi_scale.py
+    $ python3 evaluate.py --cfg config/pascal_voc_2012_multi_scale.py
 ```
-Then you will see the mIOU result as reported by the autho(62.95 mIOU for deeplab-largeFOV).
+Then you will see the mIOU result as reported by the authors(57.25 mIOU for deeplab-largeFOV).
 
-If you want to see a better result, use the configuration file `pascal_voc_aug_multi_scale.py`:
+If you want to see the result reported by the authors, use the configuration file `pascal_voc_aug_multi_scale.py`:
 ```
     $ python3 train.py --cfg config/pascal_voc_aug_multi_scale.py
     $ python3 eval.py --cfg config/pascal_voc_aug_multi_scale.py
 ```
-This includes some other tricks beyond the paper which I find helpful to boost the performance.
+This will train on the augmented dataset, which is also what the authors used in the paper.
 
 
 ## Inference
@@ -47,11 +47,18 @@ And you will see the result picture.
 
 * Upsample the output logits of the model instead of downsample the ground truth as does in [deeplabv3](https://arxiv.org/abs/1706.05587).
 
-* Enlarge the total training iter number to be 20000, and let lr jump by a factor of 0.1 at the 12500th and 17500th iteration.
+* Use the exponential lr scheduler as does in the [deeplabv3](https://arxiv.org/abs/1706.05587).
 
-* Do multi-scale training with image pyramid, with the images cropped to be (497, 497) and scaled with ratios [0.5, 0.75, 1].
+* Do multi-scale training and multi-scale testing(with flip). The images are cropped to be (497, 497). The training scales are: [0.75, 1, 1.25, 1.5, 1.75, 2.], and the testing scales are: [0.5, 0.75, 1, 1.25, 1.5, 1.75].
 
-With these tricks, my model achieves **71.84** mIOU(without crf), far better than the result reported by the authors and even suppressing the [vgg version deeplabv2](https://arxiv.org/pdf/1606.00915.pdf]).
+* Since we do not expect the crop size of the inference is too far away from what we use in the training process, I use crop evaluation. 
+
+* the images are also augmented with random variance of brightness, contrast and saturation.
+
+* Considering the imbalance between the amount of different pixels, I used the on-line hard example mining loss to train the model. 
+
+With these tricks, my model achieves **68.72** mIOU(without crf), modestly better than the result reported by the authors.
+
 
 ## By the way
 I also tried to use [mixup](https://arxiv.org/abs/1710.09412) in hopes of some further boost to the performance, but the result just gave a big slap on my face. I left the mixup code in the program and if you have special insights on this trick, please feel free to add a pull request or open an issue. Many thanks !

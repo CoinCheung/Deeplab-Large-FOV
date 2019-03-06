@@ -102,9 +102,11 @@ venv.bak/
 .mypy_cache/
 
 ## coin: 
+data
 data/
 old/
 pytorch-caffe/
 pretrained/
 example1.png
 res/
+adj.txt

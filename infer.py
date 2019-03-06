@@ -13,7 +13,7 @@ import argparse
 import importlib
 
 from lib.model import DeepLabLargeFOV
-from utils.crf import crf
+#  from utils.crf import crf
 from utils.colormap import color_map
 
 
@@ -66,7 +66,7 @@ def infer(args):
 
     ## inference
     scores = net(im)
-    scores = F.interpolate(scores, im.size()[2:], mode = 'bilinear')
+    scores = F.interpolate(scores, im.size()[2:], mode='bilinear', align_corners=True)
     scores = F.softmax(scores, 1)
     scores = scores.detach().cpu().numpy()
     if cfg.use_crf:

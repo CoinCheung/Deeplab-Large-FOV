@@ -11,7 +11,7 @@ from PIL import Image
 import cv2
 import numpy as np
 
-from lib.transform import HorizontalFlip, RandomCrop
+import lib.transform as T
 
 '''
 0: background
@@ -39,14 +39,11 @@ from lib.transform import HorizontalFlip, RandomCrop
 
 
 class PascalVoc(Dataset):
-    def __init__(self,
-            root_pth,
-            crop_size = (321, 321),
-            mode = 'train',
-            *args, **kwargs):
+    def __init__(self, cfg, mode='train', *args, **kwargs):
         super(PascalVoc, self).__init__(*args, **kwargs)
-        self.mode =mode
-        rootpath = osp.join(root_pth, 'VOC2012/')
+        self.cfg = cfg
+        self.mode = mode
+        rootpath = osp.join(cfg.datapth, 'VOCdevkit/VOC2012/')
         if not osp.exists(rootpath): assert(False)
         if not self.mode in ('train', 'val', 'trainval', 'test'): assert(False)
         if mode == 'train':
@@ -69,9 +66,17 @@ class PascalVoc(Dataset):
             fns_lbs = ['{}.png'.format(el) for el in fns]
             self.fns_lbs = [osp.join(lbpth, el) for el in fns_lbs]
 
-        self.random_crop = RandomCrop(crop_size)
-        self.horizon_flip = HorizontalFlip()
-        self.trans = transforms.Compose([
+        self.trans = T.Compose([
+            T.RandomScale(cfg.train_scales),
+            T.RandomCrop((cfg.crop_size, cfg.crop_size)),
+            T.HorizontalFlip(),
+            T.ColorJitter(
+                brightness = cfg.color_brightness,
+                contrast = cfg.color_contrast,
+                saturation = cfg.color_saturation
+                ),
+            ])
+        self.to_tensor = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
             ])
@@ -81,14 +86,14 @@ class PascalVoc(Dataset):
         lname = self.fns_lbs[idx]
         img = Image.open(iname)
         label = Image.open(lname)
+        im_lb = dict(im = img, lb = label)
         if self.mode in ('train', 'trainval'):
-            im_lb = dict(im = img, lb = label)
-            im_lb = self.random_crop(im_lb)
-            im_lb = self.horizon_flip(im_lb)
-            img, label = im_lb['im'], im_lb['lb']
-            img = self.trans(img)
-            label = np.array(label).astype(np.int64)[np.newaxis, :]
-        ## for val set, just output raw PIL images
+            im_lb = self.trans(im_lb)
+        img, label = im_lb['im'], im_lb['lb']
+        img = self.to_tensor(img)
+        label = np.array(label).astype(np.int64)[np.newaxis, :]
+        if self.mode == 'val':
+            img = torch.unsqueeze(img, 0)
 
         return img, label
 
@@ -98,8 +103,10 @@ class PascalVoc(Dataset):
 
 if __name__ == '__main__':
     from torch.utils.data import DataLoader
+    from config.pascal_voc_2012_multi_scale import cfg
 
-    ds = PascalVoc('./data/VOCdevkit')
+
+    ds = PascalVoc(cfg, mode='val')
     im, lb = ds[110]
     print(type(lb))
     print(lb.shape)
@@ -109,9 +116,12 @@ if __name__ == '__main__':
                     num_workers = 4,
                     drop_last = True)
 
-    for im, label in dl:
-        if not im.size() == (20, 3, 321, 321):
+    for im, label in ds:
+        if not im.size() == (20, 3, 513, 513):
             print(im.size())
-        if not label.size() == (20, 321, 321):
-            print(label.size)
+        if not label.shape == (20, 1, 513, 513):
+            print(label.shape)
+        label[label==255] = 0
+        if label.max() > 20:
+            print(label.max())
     print(len(ds))

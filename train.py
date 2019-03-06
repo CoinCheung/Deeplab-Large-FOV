@@ -21,6 +21,7 @@ from lib.pascal_voc import PascalVoc
 from lib.pascal_voc_aug import PascalVoc_Aug
 from lib.transform import RandomCrop
 from lib.optimizer import Optimizer
+from lib.loss import *
 from utils.logger import setup_logger
 from evaluate import eval_model
 
@@ -46,7 +47,7 @@ def train(args):
     mod_cfg = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod_cfg)
     cfg = mod_cfg.cfg
-    cfg_str = json.dumps(cfg, ensure_ascii = False, indent = 2)
+    cfg_str = json.dumps(cfg, ensure_ascii=False, indent=2)
     if not osp.exists(cfg.res_pth): os.makedirs(cfg.res_pth)
     setup_logger(cfg.res_pth)
     logger = logging.getLogger(__name__)
@@ -57,17 +58,18 @@ def train(args):
     net = DeepLabLargeFOV(3, cfg.n_classes)
     net.train()
     net.cuda()
-    net = nn.DataParallel(net)
-    Loss = nn.CrossEntropyLoss(ignore_index = cfg.ignore_label)
-    Loss.cuda()
+    if not torch.cuda.device_count() == 0: net = nn.DataParallel(net)
+    n_min = (cfg.crop_size**2) * cfg.batchsize // 16
+    criteria = OhemCELoss(0.7, n_min)
+    criteria.cuda()
 
     ## dataset
     logger.info('creating dataset and dataloader')
-    ds = eval(cfg.dataset)(cfg.datapth, crop_size = cfg.crop_size,  mode = 'train')
+    ds = eval(cfg.dataset)(cfg, mode='train')
     dl = DataLoader(ds,
             batch_size = cfg.batchsize,
             shuffle = True,
-            num_workers = 6,
+            num_workers = cfg.n_workers,
             drop_last = True)
 
     ## optimizer
@@ -75,12 +77,12 @@ def train(args):
     optimizer = Optimizer(
             params = net.parameters(),
             warmup_start_lr = cfg.warmup_start_lr,
-            warmup_iter = cfg.warmup_iter,
-            start_lr = cfg.start_lr,
-            lr_steps = cfg.lr_steps,
-            lr_factor = cfg.lr_factor,
+            warmup_steps = cfg.warmup_iter,
+            lr0 = cfg.start_lr,
+            max_iter = cfg.iter_num,
             momentum = cfg.momentum,
-            weight_decay = cfg.weight_decay)
+            wd = cfg.weight_decay,
+            power = cfg.power)
 
     ## train loop
     loss_avg = []
@@ -120,21 +122,16 @@ def train(args):
         #      optimizer.step()
 
         optimizer.zero_grad()
-        H, W = im.size()[2:]
-        for s in cfg.scales:
-            h, w = int(H * s), int(W * s)
-            im_s = F.interpolate(im, (h, w), mode = 'bilinear')
-            out = net(im_s)
-            out = F.interpolate(out, lb.size()[2:], mode = 'bilinear') # upsample to original size
-            lb = torch.squeeze(lb)
-            loss = Loss(out, lb)
-            loss.backward()
+        out = net(im)
+        lb = torch.squeeze(lb)
+        loss = criteria(out, lb)
+        loss.backward()
         optimizer.step()
 
         loss = loss.detach().cpu().numpy()
         loss_avg.append(loss)
         ## log message
-        if it % cfg.log_iter == 0 and not it == 0:
+        if it%cfg.log_iter==0 and not it==0:
             loss_avg = sum(loss_avg) / len(loss_avg)
             ed = time.time()
             t_int = ed - st
@@ -147,12 +144,15 @@ def train(args):
 
     ## dump model
     model_pth = osp.join(cfg.res_pth, 'model_final.pkl')
-    torch.save(net.module.state_dict(), model_pth)
+    net.cpu()
+    state_dict = net.module.state_dict() if hasattr(net, 'module') else net.state_dict()
+    torch.save(state_dict, model_pth)
     logger.info('training done, model saved to: {}'.format(model_pth))
 
     ## test after train
     if cfg.test_after_train:
-        mIOU = eval_model(net, cfg.use_crf)
+        net.cuda()
+        mIOU = eval_model(net, cfg)
         logger.info('iou in whole is: {}'.format(mIOU))
 
 

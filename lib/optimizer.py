@@ -2,92 +2,54 @@
 # -*- encoding: utf-8 -*-
 
 
-import torch.optim as optim
+import torch
 import logging
 
-
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger()
 
 class Optimizer(object):
     def __init__(self,
-            params,
-            warmup_start_lr,
-            warmup_iter,
-            start_lr,
-            lr_steps,
-            lr_factor,
-            momentum,
-            weight_decay,
-            *args, **kwargs):
-        self.warmup_start_lr = warmup_start_lr
-        self.warmup_iter = warmup_iter
-        self.start_lr = start_lr
-        self.lr_steps = lr_steps
-        self.lr_factor = lr_factor
-        self.momentum = momentum
-        self.weight_decay = weight_decay
-
-        self.optim = optim.SGD(
                 params,
-                lr = start_lr,
+                warmup_start_lr,
+                warmup_steps,
+                lr0,
+                max_iter,
+                momentum,
+                power,
+                wd,
+                *args, **kwargs):
+        self.warmup_steps = warmup_steps
+        self.warmup_start_lr = warmup_start_lr
+        self.lr0 = lr0
+        self.lr = self.lr0
+        self.max_iter = float(max_iter)
+        self.power = power
+        self.it = 0
+        self.optim = torch.optim.SGD(
+                params,
+                lr = lr0,
                 momentum = momentum,
-                weight_decay = weight_decay)
-
-        self.iter = 0
-        self.lr = warmup_start_lr
-        self.warmup_factor = (start_lr / warmup_start_lr) ** (1. / warmup_iter)
-
-
-    def step(self):
-        lr = self.get_lr()
-        if self.iter in self.lr_steps:
-            logger.info('\t===> learning rate is set to: {}'.format(self.lr))
-        for pg in self.optim.param_groups:
-            pg['lr'] = lr
-        self.optim.defaults['lr'] = lr
-        self.optim.step()
-        self.iter += 1
-
+                weight_decay = wd)
+        self.warmup_factor = (self.lr0/self.warmup_start_lr)**(1./self.warmup_steps)
 
     def get_lr(self):
-        if self.iter <= self.warmup_iter:
-            self.lr = self.warmup_start_lr * self.warmup_factor ** self.iter
+        if self.it <= self.warmup_steps:
+            lr = self.warmup_start_lr*(self.warmup_factor**self.it)
         else:
-            for i, ms in enumerate(self.lr_steps):
-                if ms == self.iter:
-                    self.lr = self.start_lr * (0.1 ** (i + 1))
-        return self.lr
+            factor = (1-(self.it-self.warmup_steps)/(self.max_iter-self.warmup_steps))**self.power
+            lr = self.lr0 * factor
+        return lr
+
+    def step(self):
+        self.lr = self.get_lr()
+        for pg in self.optim.param_groups:
+            pg['lr'] = self.lr
+        self.optim.defaults['lr'] = self.lr
+        self.it += 1
+        self.optim.step()
+        if self.it == self.warmup_steps+2:
+            logger.info('==> warmup done, start to implement poly lr strategy')
 
     def zero_grad(self):
         self.optim.zero_grad()
-
-
-
-if __name__ == '__main__':
-    import torchvision
-    net = torchvision.models.vgg16()
-
-    warmup_start_lr = 1e-6
-    warmup_iter = 10
-    start_lr = 1e-3
-    lr_steps = [20, 40]
-    lr_factor = 0.1
-    momentum = 0.9
-    weight_decay = 5e-4
-    optimizer = Optimizer(
-            params = net.parameters(),
-            warmup_start_lr = warmup_start_lr,
-            warmup_iter = warmup_iter,
-            start_lr = start_lr,
-            lr_steps = lr_steps,
-            lr_factor = lr_factor,
-            momentum = momentum,
-            weight_decay = weight_decay
-            )
-    for i in range(8000):
-        if i <= 30:
-            print(i, ": ", optimizer.get_lr())
-            optimizer.step()
-
 

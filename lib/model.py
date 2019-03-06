@@ -75,24 +75,25 @@ class DeepLabLargeFOV(nn.Module):
             stride = 1,
             padding = 12,
             dilation = 12))
-        classifier.append(nn.ReLU(inplace = True))
-        classifier.append(nn.Conv2d(1024, 1024, kernel_size = 1, stride = 1, padding = 0))
-        classifier.append(nn.ReLU(inplace = True))
-        classifier.append(nn.Dropout(p = 0.5))
-        classifier.append(nn.Conv2d(1024, out_dim, kernel_size = 1))
+        classifier.append(nn.ReLU(inplace=True))
+        classifier.append(nn.Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0))
+        classifier.append(nn.ReLU(inplace=True))
+        classifier.append(nn.Dropout(p=0.5))
+        classifier.append(nn.Conv2d(1024, out_dim, kernel_size=1))
         self.classifier = nn.Sequential(*classifier)
 
         self.init_weights()
 
 
     def forward(self, x):
-        im = x
+        N, C, H, W = x.size()
         x = self.features(x)
         x = self.classifier(x)
+        x = F.interpolate(x, (H, W), mode='bilinear', align_corners=True)
         return x
 
     def init_weights(self):
-        vgg = torchvision.models.vgg16(pretrained = True)
+        vgg = torchvision.models.vgg16(pretrained=True)
         state_vgg = vgg.features.state_dict()
         self.features.load_state_dict(state_vgg)
 
